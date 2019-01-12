@@ -25,7 +25,7 @@
 # also be handled in opensslconf-new.h.
 %define multilib_arches %{ix86} ia64 %{mips} ppc %{power64} s390 s390x sparcv9 sparc64 %{x86_64}
 
-%global optflags %{optflags} -O3
+%global optflags %{optflags} -Ofast
 
 # Disables krb5 support to avoid circular dependency
 # (tpg) 2018-04-18 why do we need krb5 here ?
@@ -35,7 +35,7 @@ Summary: Utilities from the general purpose cryptography library with TLS implem
 Name: openssl
 Version: 1.1.1a
 %define beta %{nil}
-Release: %{-beta:0.%{beta}.}3
+Release: %{-beta:0.%{beta}.}10
 # We have to remove certain patented algorithms from the openssl source
 # tarball with the hobble-openssl script which is included below.
 # The original openssl upstream tarball cannot be shipped in the .src.rpm.
@@ -76,8 +76,6 @@ Patch92: http://pkgs.fedoraproject.org/cgit/rpms/openssl.git/plain/openssl-1.1.1
 ### OpenMandriva specific patches
 Patch100: openssl-1.1.1-icpbrasil.diff
 #Patch102: openssl-1.1.0c-fips-linkerscript.patch
-# (tpg) by default use LLVM/clang and our optflags
-Patch103: openssl-1.1.1a-use-clang-and-OMV-optflags.patch
 
 License: OpenSSL
 Group: System/Libraries
@@ -88,7 +86,7 @@ BuildRequires: krb5-devel
 %endif
 BuildRequires: perl
 BuildRequires: sed
-BuildRequires: pkgconfig(zlib)
+BuildRequires: zlib-devel
 BuildRequires: pkgconfig(libsctp)
 BuildRequires: /usr/bin/cmp
 BuildRequires: /usr/bin/rename
@@ -162,12 +160,14 @@ OpenSSL documentation.
 cp %{SOURCE12} crypto/ec/
 cp %{SOURCE13} test/
 
+sed -i -e 's|-O3 -fomit-frame-pointer|%{optflags}|g' Configurations/10-main.conf
+
 %build
 %serverbuild
 # Figure out which flags we want to use.
 # default
 sslarch=%{_os}-%{_target_cpu}
-%ifarch %{ix86}
+%ifarch %ix86
 sslarch=linux-elf
 if ! echo %{_target} | grep -q i686 ; then
     sslflags="no-asm 386"
@@ -242,14 +242,14 @@ sed -i -e 's,-march=armv7-a,-march=armv7-a -fno-integrated-as,g' config
 	--prefix=%{_prefix} --libdir=%{_lib} \
 	--system-ciphers-file=%{_sysconfdir}/crypto-policies/back-ends/openssl.config \
 	--openssldir=%{_sysconfdir}/pki/tls ${sslflags} \
-	zlib-dynamic enable-camellia enable-seed enable-rfc3779 enable-sctp \
+	zlib enable-camellia enable-seed enable-rfc3779 enable-sctp \
 	enable-cms enable-md2 enable-rc5 enable-ssl3 enable-ssl3-method \
 	no-mdc2 no-ec2m no-gost no-srp \
 	shared  ${sslarch} $RPM_OPT_FLAGS
 
 # {?!nofips:fips}
 util/mkdef.pl crypto update
-%make_build all
+%make all
 
 # Overwrite FIPS README
 cp -f %{SOURCE11} .
