@@ -35,7 +35,7 @@ Summary: Utilities from the general purpose cryptography library with TLS implem
 Name: openssl
 Version: 1.1.1a
 %define beta %{nil}
-Release: %{-beta:0.%{beta}.}3
+Release: %{-beta:0.%{beta}.}4
 # We have to remove certain patented algorithms from the openssl source
 # tarball with the hobble-openssl script which is included below.
 # The original openssl upstream tarball cannot be shipped in the .src.rpm.
